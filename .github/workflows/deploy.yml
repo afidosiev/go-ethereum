@@ -1,0 +1,47 @@
+name: Deploy contracts and create new image
+
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - master
+
+jobs:
+  deploy:
+    if: github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'CI:Deploy')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+ 
+      # - name: Build and push
+      #   uses: docker/build-push-action@v6
+      #   with:
+      #     context: .
+      #     push: true
+      #     tags: ${{ secrets.DOCKERHUB_USERNAME }}/geth:latest
+      - name: Run local devnet
+        run: docker run -d --name geth  -p 8545:8545 ${{ secrets.DOCKERHUB_USERNAME }}/geth:latest --dev --http --http.addr 0.0.0.0 --dev.period 12 --datadir /root/.ethereum
+
+      - name: Compile and deploy smart contract
+        run: |
+          cd hardhat
+          npm install
+          npx hardhat compile
+          HARDHAT_IGNITION_CONFIRM_DEPLOYMENT=false npx hardhat ignition deploy ./ignition/modules/Lock.js --network localhost
+
+      - name: Stop container and create new image
+        run: |
+          docker stop geth
+          docker commit geth ${{ secrets.DOCKERHUB_USERNAME }}/geth:latest_contracts
+          docker rm geth
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PAT }}
+
+      - name: Push image
+        run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/geth:latest_contracts
