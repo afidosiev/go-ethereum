@@ -1,0 +1,21 @@
+name: geth_devnet
+
+services:
+  devnet:
+    container_name: geth
+    image: afidosiev/geth:latest
+    command: --dev --http --http.addr 0.0.0.0 --datadir /root/.ethereum --dev.period 12
+    networks:
+      - devnet
+    volumes:
+      - data:/root/.ethereum
+    ports:
+      - 8545:8545
+
+networks:
+  devnet:
+    driver: bridge
+
+volumes:
+  data:
+
