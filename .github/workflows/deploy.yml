@@ -47,9 +47,10 @@ jobs:
         run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/geth:latest_contracts
       
       - name: Start container with the new image and mount hardhat dir
-        run: docker run -d --name geth-contracts -v $(pwd)/hardhat:/root/hardhat -p 8545:8545 ${{ secrets.DOCKERHUB_USERNAME }}/geth:latest_contracts --dev --http --http.addr 0.0.0.0 --dev.period 12 --datadir /root/.ethereum
+        run: docker run -d --rm --name geth-contracts -v $(pwd)/hardhat:/root/hardhat -p 8545:8545 ${{ secrets.DOCKERHUB_USERNAME }}/geth:latest_contracts --dev --http --http.addr 0.0.0.0 --dev.period 12 --datadir /root/.ethereum
 
       - name: Install npm and run tests
         run: |
           docker exec geth-contracts apk add --upgrade npm
           docker exec -w /root/hardhat geth-contracts npx hardhat test
+          docker stop geth-contracts
