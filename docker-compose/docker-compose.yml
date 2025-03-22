@@ -1,0 +1,61 @@
+name: geth_devnet
+
+services:
+  devnet:
+    extends:
+      file: ./services/geth.yml
+      service: devnet
+
+  redis-db:
+    extends:
+      file: ./services/redis.yml
+      service: redis-db
+
+  db-init:
+    extends:
+      file: ./services/db.yml
+      service: db-init
+
+  db:
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+    extends:
+      file: ./services/db.yml
+      service: db
+
+  backend:
+    depends_on:
+      - db
+      - redis-db
+      - devnet
+    extends:
+      file: ./services/backend.yml
+      service: backend
+    links:
+      - db:database
+    environment:
+        ETHEREUM_JSONRPC_HTTP_URL: http://devnet:8545/
+        ETHEREUM_JSONRPC_TRACE_URL: http://devnet:8545/
+        ETHEREUM_JSONRPC_WS_URL: ws://devnet:8546/
+        CHAIN_ID: '1337'
+        INDEXER_CATCHUP_BLOCK_INTERVAL: 10
+
+  frontend:
+    depends_on:
+      - backend
+    extends:
+      file: ./services/frontend.yml
+      service: frontend
+    environment:
+      NEXT_PUBLIC_STATS_API_HOST:
+
+  proxy:
+    depends_on:
+      - backend
+      - frontend
+    extends:
+      file: ./services/nginx-explorer.yml
+      service: proxy
+    volumes:
+      - "./proxy/explorer.conf.template:/etc/nginx/templates/default.conf.template"
