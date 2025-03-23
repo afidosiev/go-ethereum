@@ -1,3 +1,51 @@
+# DevOps task
+## CICD workflow
+`build` job is trigged when PR is merged with tag `CI:Build`:
+- builds new image
+- pushes the image to DockerHub with tag `latest`
+
+`deploy` job is triggered when PR is merged with `CI:Deploy` label:
+- runs geth devnet using the image with `latest` tag
+- deploys smart contract using hardhat ignition to the container
+- create and push new image from the container with tag `latest_contracts`
+- start new container with `latest_contracts` tag and run hardhat tests on the container using HardHat Network
+
+## Docker Compose
+Docker compose definition created and Blockscout services are added in `docker-compose` directory.
+
+Note: backend volume is commented due to issue with permissions
+
+```bash
+cd docker-compose
+docker compose up -d
+```
+### Images
+Containers
+![Containers](./images/docker-compose-containers.png)
+
+Blockscout
+![Blockscout](./images/blockscout.png)
+
+## Terraform
+Terraform files created in `terraform` directory.
+
+### Prerequisites
+- S3 bucket to hold the state file
+- IAM user/role to assume to create the infrastructure
+
+```bash
+cd terraform
+terraform init
+terraform plan
+terraform apply
+```
+### Images
+Cluster
+![Cluster](./images/eks-cluster.png)
+
+Objects
+![Objects](./images/kubernetes-objects.png)
+
 ## Go Ethereum
 
 Golang execution layer implementation of the Ethereum protocol.
